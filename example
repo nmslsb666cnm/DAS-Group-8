@@ -1,0 +1,62 @@
+---
+title: "DA-group"
+format: html
+editor: visual
+---
+# Introduction
+** Study objectives: **
+To assess trends in BMI in Scotland between 2008 and 2012.
+2. Analyze whether BMI differs by age, gender, employment status, and vegetable and fruit intake.
+
+** Data description: **
+- 'AgeGroup' : age range (e.g. 16-24, 25-34, etc.).  
+
+- 'Sex' : gender (Male/ male or Female/ female).
+- 'Employment' : employment status (e.g. employed/self-employed, retired, full-time, caring for family, unemployed looking for work, permanent incapacity, etc.).
+- 'Veg' : meeting the recommended intake of vegetables (Yes/ yes or No/ no).
+- 'Fruit' : Did you meet the recommended intake of fruit (Yes/ yes or No/ no).
+- 'Year' : survey year (2008-2012).
+- 'BMI' : Body Mass Index (weight (kg)/ height (m)^2).
+
+The above dataset **DAProject8.csv** is from the Scottish Health Survey 2008-2012 and contains a total of 25,224 individual records. The annual survey sample size ranges from approximately 3600 to 5700 persons. The data will be analysed below to answer the questions raised by the objectives of the study.
+
+# Exploratory data analysis
+In this section, we perform exploratory analyses of the BMI data, including overall distribution characteristics, trends by year, differences in BMI across populations, and checks on data quality (missing and outliers).
+This table mainly outputs the main statistics for BMI. According to the results, the mean BMI of the population surveyed was about 27.8, the median was about 27.2, and the standard deviation was about 5.3. The minimum BMI was approximately 12.6 and the maximum reached approximately 59.1, indicating the presence of a few extremely high BMI values. Overall, the median BMI of adults in Scotland was close to the overweight threshold (25), and the mean was already in the overweight range, which indicates that overweight and obesity are prevalent in this population.
+```{r}
+#| echo: false
+#| warning: false 
+#| message: false
+library(readr)
+health_data <- read_csv("C:/Users/FOX/Desktop/data analysis group/DAProject8.csv")
+summary(health_data$BMI)
+sd(health_data$BMI)
+```
+## The trend of BMI over the years
+Figure @fig-trend shows that the average BMI of adults in Scotland remained roughly stable between 2008 and 2012, with no obvious upward or downward trend. The mean BMI fluctuated slightly between 27.7 and 27.9: it decreased slightly in 2009 relative to 2008, peaked in 2010 but with a small difference, and fell back slightly thereafter. Overall, the mean BMI level in the Scottish population remained at a high overweight level during this period and no significant trends in change were observed.
+```{r}
+#| echo: false
+#| warning: false 
+#| message: false
+#| tbl-cap: "Mean BMI and standard deviation by year, 2008-2012"
+#| label: fig-trend
+library(dplyr)
+bmi_year <- health_data %>% group_by(Year) %>% 
+    summarize(mean_BMI = mean(BMI, na.rm = TRUE),
+              sd_BMI = sd(BMI, na.rm = TRUE),
+              n = n())
+library(ggplot2)
+ggplot(bmi_year, aes(x=Year, y=mean_BMI)) +
+    geom_line(color="steelblue") + 
+    geom_point(color="steelblue", size=2) +
+    geom_errorbar(aes(ymin = mean_BMI - 1.96*(sd_BMI/sqrt(n)), 
+                      ymax = mean_BMI + 1.96*(sd_BMI/sqrt(n))), 
+                 width=0.2, color="gray40") +
+    labs(x="year", y="mean of BMI", title="2008-2012 mean of BMI trend") +
+    theme_minimal()
+```
+## Distribution of BMI in different populations
+Next, we explored the effects of different age groups, gender, employment status, and fruit and vegetable intake on BMI. At the EDA stage, visualization and grouping statistics were used to observe the relationship between these factors and BMI.   
+** Analysis by age group: ** The distribution of BMI by age group was viewed using boxplots (FIG @fig-age). Age groups were ordered from young to old, and BMI changes with age could be observed.
+```{r}
+
