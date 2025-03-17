@@ -1,28 +1,29 @@
 ---
-title: "DA-group8"
+title: "DA-group"
 format: html
 editor: visual
 ---
+
 # Introduction
-** Study objectives: **
-To assess trends in BMI in Scotland between 2008 and 2012.
-2. Analyze whether BMI differs by age, gender, employment status, and vegetable and fruit intake.
 
-** Data description: **
-- 'AgeGroup' : age range (e.g. 16-24, 25-34, etc.).  
+**Study objectives:** To assess trends in BMI in Scotland between 2008 and 2012. 2. Analyze whether BMI differs by age, gender, employment status, and vegetable and fruit intake.
 
-- 'Sex' : gender (Male/ male or Female/ female).
-- 'Employment' : employment status (e.g. employed/self-employed, retired, full-time, caring for family, unemployed looking for work, permanent incapacity, etc.).
-- 'Veg' : meeting the recommended intake of vegetables (Yes/ yes or No/ no).
-- 'Fruit' : Did you meet the recommended intake of fruit (Yes/ yes or No/ no).
-- 'Year' : survey year (2008-2012).
-- 'BMI' : Body Mass Index (weight (kg)/ height (m)^2).
+**Data description:**
+
+-   AgeGroup : age range (e.g. 16-24, 25-34, etc.)
+-   Sex : gender (Male/ male or Female/ female).
+-   Employment : employment status (e.g. employed/self-employed, retired, full-time, caring for family, unemployed looking for work, permanent incapacity, etc.).
+-   Veg : meeting the recommended intake of vegetables (Yes/ yes or No/ no).
+-   Fruit : Did you meet the recommended intake of fruit (Yes/ yes or No/ no).
+-   Year : survey year (2008-2012).
+-   BMI : Body Mass Index (weight (kg)/ height (m)\^2).
 
 The above dataset **DAProject8.csv** is from the Scottish Health Survey 2008-2012 and contains a total of 25,224 individual records. The annual survey sample size ranges from approximately 3600 to 5700 persons. The data will be analysed below to answer the questions raised by the objectives of the study.
 
 # Exploratory data analysis
-In this section, we perform exploratory analyses of the BMI data, including overall distribution characteristics, trends by year, differences in BMI across populations, and checks on data quality (missing and outliers).
-This table mainly outputs the main statistics for BMI. According to the results, the mean BMI of the population surveyed was about 27.8, the median was about 27.2, and the standard deviation was about 5.3. The minimum BMI was approximately 12.6 and the maximum reached approximately 59.1, indicating the presence of a few extremely high BMI values. Overall, the median BMI of adults in Scotland was close to the overweight threshold (25), and the mean was already in the overweight range, which indicates that overweight and obesity are prevalent in this population.
+
+In this section, we perform exploratory analyses of the BMI data, including overall distribution characteristics, trends by year, differences in BMI across populations, and checks on data quality (missing and outliers). This table mainly outputs the main statistics for BMI. According to the results, the mean BMI of the population surveyed was about 27.8, the median was about 27.2, and the standard deviation was about 5.3. The minimum BMI was approximately 12.6 and the maximum reached approximately 59.1, indicating the presence of a few extremely high BMI values. Overall, the median BMI of adults in Scotland was close to the overweight threshold (25), and the mean was already in the overweight range, which indicates that overweight and obesity are prevalent in this population.
+
 ```{r}
 #| echo: false
 #| warning: false 
@@ -32,8 +33,11 @@ health_data <- read_csv("C:/Users/FOX/Desktop/data analysis group/DAProject8.csv
 summary(health_data$BMI)
 sd(health_data$BMI)
 ```
+
 ## The trend of BMI over the years
+
 Figure @fig-trend shows that the average BMI of adults in Scotland remained roughly stable between 2008 and 2012, with no obvious upward or downward trend. The mean BMI fluctuated slightly between 27.7 and 27.9: it decreased slightly in 2009 relative to 2008, peaked in 2010 but with a small difference, and fell back slightly thereafter. Overall, the mean BMI level in the Scottish population remained at a high overweight level during this period and no significant trends in change were observed.
+
 ```{r}
 #| echo: false
 #| warning: false 
@@ -55,9 +59,13 @@ ggplot(bmi_year, aes(x=Year, y=mean_BMI)) +
     labs(x="year", y="mean of BMI", title="2008-2012 mean of BMI trend") +
     theme_minimal()
 ```
+
 ## Distribution of BMI in different populations
-Next, we explored the effects of different age groups, gender, employment status, and fruit and vegetable intake on BMI. At the EDA stage, visualization and grouping statistics were used to observe the relationship between these factors and BMI.   
-** Analysis by age group: **** Analysis by age group: ** Figure @fig-age shows that BMI changes significantly with age group. The youth group (16-24 years old) had a lower BMI level, with a median of about 22-25. BMI increased with age: the median BMI of the middle-aged group (35-54 years old) has exceeded 27, and the highest BMI was reached in the 55-64 age group, with a median of nearly 30. Median BMI decreased slightly in the group older than 75 years but remained higher than in the younger group. This indicates that the mean and median BMI are the highest in the middle-aged to older age group, while the younger age group is thinner and the older age group has a slight drop.
+
+Next, we explored the effects of different age groups, gender, employment status, and fruit and vegetable intake on BMI. At the EDA stage, visualization and grouping statistics were used to observe the relationship between these factors and BMI.\
+**Analysis by age group:** \
+Figure @fig-age shows that BMI changes significantly with age group. The youth group (16-24 years old) had a lower BMI level, with a median of about 22-25. BMI increased with age: the median BMI of the middle-aged group (35-54 years old) has exceeded 27, and the highest BMI was reached in the 55-64 age group, with a median of nearly 30. Median BMI decreased slightly in the group older than 75 years but remained higher than in the younger group. This indicates that the mean and median BMI are the highest in the middle-aged to older age group, while the younger age group is thinner and the older age group has a slight drop.
+
 ```{r}
 #| echo: false
 #| warning: false 
@@ -69,3 +77,62 @@ ggplot(health_data, aes(x=AgeGroup, y=BMI)) +
     labs(x="age group", y="BMI", title="different age group of BMI trend") +
     theme_minimal()
 ```
+
+**Analysis by sex:**  
+Figure @fig-sex shows that the shape of the BMI distribution is similar between men and women, with highly close medians. The median BMI was slightly higher in men than in women, but the overall difference was not significant. The BMI interquartile range (IQR) was similar for men and women, suggesting that sex may not be a significant determinant of BMI.
+```{r}
+#| echo: false
+#| warning: false 
+#| message: false
+#| tbl-cap: "BMI distribution by sex"
+#| label: fig-sex
+ggplot(health_data, aes(x=Sex, y=BMI, fill=Sex)) +
+    geom_boxplot() +
+    labs(x="sex", y="BMI", title="male vs female BMI distribution") +
+    scale_fill_manual(values=c("Female"="pink","Male"="lightblue")) +
+    theme_minimal()
+```
+**Analysis by employment status:**  
+Figure @fig-emp shows that employment status is associated with BMI to some extent. The BMI of full-time students was significantly lower than that of other groups, with a median distribution below 25. In contrast, the distribution of BMI was relatively high for retirees and permanent incapacity, with medians approaching or even exceeding 30. Other categories (employed/self-employed, carer, unemployed, etc.) fall in between. The results suggest that occupational and lifestyle factors may influence body weight, with BMI being higher in the retired and disabled and lowest in students.
+```{r}
+#| echo: false
+#| warning: false 
+#| message: false
+#| tbl-cap: "BMI distribution by employment status"
+#| label: fig-emp
+ggplot(health_data, aes(x=Employment, y=BMI)) +
+    geom_boxplot(fill="lightgreen", outlier.color="red", outlier.alpha=0.5) +
+    labs(x="employment status", y="BMI", title="different employment status BMI distribution") +
+    theme(axis.text.x = element_text(angle=45, hjust=1)) +
+    theme_minimal() +
+   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+**Analysis by vegetable/fruit intake:** 
+Based on the above calculations, the mean BMI was slightly lower in those who met the targets for vegetable consumption than in those who did not. For example, mean BMI was about 27.7 among people who ate adequate amounts of vegetables and about 28.0 among those who did not. This suggests that good vegetable intake habits may be associated with slightly lower BMI. Conversely, those with adequate fruit intake had a slightly higher mean BMI than those with inadequate fruit intake (about 27.9 vs 27.6).
+```{r}
+#| echo: false
+#| warning: false 
+#| message: false
+health_data %>% group_by(Veg) %>% summarize(mean_BMI = mean(BMI), sd_BMI = sd(BMI), n=n())
+health_data %>% group_by(Fruit) %>% summarize(mean_BMI = mean(BMI), sd_BMI = sd(BMI), n=n())
+```
+# Formal statistical analysis
+Based on the exploratory analyses, we further conducted statistical inference analyses to more rigorously examine the associations between BMI and year and demographic/lifestyle variables. The following analyses were performed: (1) Analysis of variance (ANOVA) was used to test whether the difference in BMI between different groups was significant; (2) Linear regression analysis was used to analyze the trend of BMI over time.  
+
+The results of this multivariate ANOVA further confirmed that age and employment status and vegetable intake had a significant effect on BMI ($p<0.05$), while the effect of gender and fruit intake was not significant in the multivariate model. This suggests that the simple association between fruit consumption and BMI disappears after controlling for factors such as age, which may indicate that the effect of fruit consumption on BMI is confounded by age structure and other factors. Gender had no effect after controlling for other factors.
+```{r}
+#| echo: false
+#| warning: false 
+#| message: false
+anova_multi <- aov(BMI ~ AgeGroup + Sex + Employment + Veg + Fruit, data=health_data)
+summary(anova_multi)
+```
+The regression results showed that the annual coefficient estimates were very small and not statistically significant ($p = 0.34$). The mean BMI in the Scottish population remained relatively stable over that 5-year period, with no significant linear increases or decreases.
+```{r}
+#| echo: false
+#| warning: false 
+#| message: false
+lm_year <- lm(BMI ~ Year, data=health_data)
+summary(lm_year)
+```
+
