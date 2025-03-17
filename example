@@ -57,6 +57,15 @@ ggplot(bmi_year, aes(x=Year, y=mean_BMI)) +
 ```
 ## Distribution of BMI in different populations
 Next, we explored the effects of different age groups, gender, employment status, and fruit and vegetable intake on BMI. At the EDA stage, visualization and grouping statistics were used to observe the relationship between these factors and BMI.   
-** Analysis by age group: ** The distribution of BMI by age group was viewed using boxplots (FIG @fig-age). Age groups were ordered from young to old, and BMI changes with age could be observed.
+** Analysis by age group: **** Analysis by age group: ** Figure @fig-age shows that BMI changes significantly with age group. The youth group (16-24 years old) had a lower BMI level, with a median of about 22-25. BMI increased with age: the median BMI of the middle-aged group (35-54 years old) has exceeded 27, and the highest BMI was reached in the 55-64 age group, with a median of nearly 30. Median BMI decreased slightly in the group older than 75 years but remained higher than in the younger group. This indicates that the mean and median BMI are the highest in the middle-aged to older age group, while the younger age group is thinner and the older age group has a slight drop.
 ```{r}
-
+#| echo: false
+#| warning: false 
+#| message: false
+#| tbl-cap: "BMI distribution by age group"
+#| label: fig-age
+ggplot(health_data, aes(x=AgeGroup, y=BMI)) +
+    geom_boxplot(fill="skyblue", outlier.color="red", outlier.alpha=0.5) +
+    labs(x="age group", y="BMI", title="different age group of BMI trend") +
+    theme_minimal()
+```
