@@ -1,0 +1,133 @@
+# Introduction
+
+This report investigates measles susceptibility among young children in Glasgow from 1998 to 2012 to determine if Glasgow exhibited a change in measles susceptibility following the Wakefield article’s retraction. In particular, we examine whether any change occurred around 2004, when the article’s claims were repudiated. We use data from DAProject15.csv, which contains yearly counts of measles-susceptible children in Glasgow’s Intermediate Zones (IZs).\
+**Key variables are:**\
+**Y** – number of pre-school children (per IZ) susceptible to measles.\
+**N** – total number of pre-school children in that IZ.\
+**Year** – the year of observation .\
+By analyzing the proportion of susceptible children (Y/N) over time, we aim to assess trends before and after 2004. The analysis includes an exploratory visualization of susceptibility rates over 1998–2012 and formal statistical tests (e.g. chi-square tests) comparing the pre-2004 and post-2004 periods. The results will shed light on whether the public’s response in Glasgow changed following the discrediting of the Wakefield study.
+
+# Exploratory Data Analysis
+
+First, we load the dataset and examine its structure. We aggregate the data by year to compute the total number of susceptible children and the total population of pre-school children each year in Glasgow. This allows us to calculate the overall proportion of children susceptible to measles for each year. The table above shows the total number of susceptible children (Y), total children (N), and the proportion susceptible for each year in the dataset. We note the following:\
+The data covers seven time points: 1998, 2000, 2002, 2004, 2008, 2010, and 2012. (Data were not recorded for every single year in between.)\
+The total number of pre-school children in Glasgow (N) is on the order of 12,000–14,000 in these data, and the number susceptible (Y) varies from year to year.\
+The proportion of children susceptible to measles (Y/N) **increases from about 4.7% in 1998 to a peak of about 7.7%** in 2008, before dropping back to around 4.6% by
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+library(ggplot2)
+library(dplyr)
+data <- read.csv("C:/Users/FOX/Desktop/data analysis group 15/DAProject15.csv")
+year_summary <- data %>%
+  group_by(Year) %>%
+  summarise(Y = sum(Y), N = sum(N)) %>%
+  mutate(Proportion = Y / N)
+year_summary
+```
+
+The left plot (Y) is right-skewed, meaning a small number of zones have a disproportionately high number of susceptible children.\
+The right plot (N) is more symmetric, indicating that most zones have a similar population size. This suggests that some zones may have lower vaccination rates or other risk factors contributing to higher susceptibility, even if they do not necessarily have more children.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Distribution of Susceptible and Total Children in Intermediate Zones"
+ggplot(data, aes(x=Y)) +
+  geom_histogram(bins=30, fill="blue", alpha=0.6, color="black") +
+  labs(title="Distribution of Susceptible Children (Y)", x="Number of Susceptible Children", y="Frequency") +
+  theme_minimal()
+ggplot(data, aes(x=N)) +
+  geom_histogram(bins=30, fill="red", alpha=0.6, color="black") +
+  labs(title="Distribution of Total Children (N)", x="Total Children in IZ", y="Frequency") +
+  theme_minimal()
+```
+
+The @fig-year shows the proportion of pre-school children susceptible to measles in Glasgow from 1998 to 2012. The trend initially increases from 1998 to 2002, reaching a peak of susceptibility at around 7.1%, likely reflecting declining MMR vaccination rates following Wakefield’s study. In 2004, the susceptibility rate drops slightly but remains high, indicating a slow recovery in vaccine confidence after the partial retraction of the study. However, susceptibility spikes again in 2008, suggesting that the decline in vaccine uptake persisted for some time. After 2010, following the full retraction of Wakefield’s study and intensified public health efforts, susceptibility drops significantly, reaching its lowest level in 2012, suggesting that vaccine confidence was eventually restored.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| fig-cap: "Trends in Measles Susceptibility in Glasgow (1998–2012)"
+#| label: fig-year
+ggplot(year_summary, aes(x=Year, y=Proportion)) +
+  geom_line(color="blue") +
+  geom_point(size=3, color="red") +
+  geom_vline(xintercept=2004, linetype="dashed", color="black") +
+  labs(title="Measles Susceptibility in Glasgow (1998-2012)",
+       x="Year", y="Proportion Susceptible") +
+  theme_minimal()
+```
+
+# Formal Statistical Analysis
+
+We define **measles susceptibility** in each Intermediate Zone (IZ) and year as the proportion:
+
+$$
+p_i = \frac{Y_i}{N_i}
+$$ where:
+
+-   ( Y_i ) is the number of susceptible pre-school children in the ( i )-th IZ.
+-   ( N_i ) is the total number of pre-school children in the same IZ.
+-   ( p_i ) represents the proportion of susceptible children.
+
+We aim to test whether the **proportion of susceptible children changed significantly after 2004**. We formulate two statistical models:
+
+#### **1. Comparison of Two Proportions (Chi-square Test)**
+
+To compare **pre-2004 vs. post-2004**, we define the null and alternative hypotheses:
+
+$$
+H_0: p_{\text{pre}} = p_{\text{post}}
+$$
+
+$$
+H_A: p_{\text{pre}} \neq p_{\text{post}}
+$$
+
+where:
+
+-   ( p\_{\text{pre}} ) is the overall proportion of susceptible children in **1998, 2000, and 2002**.
+-   ( p\_{\text{post}} ) is the overall proportion in **2004, 2008, 2010, and 2012**.
+
+We use a **chi-square test for independence** on the contingency table,the p-value 0.7434 suggests that there is no statistically significant difference in the proportion of susceptible children between pre-2004 and post-2004.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| tbl-cap: chi-square test for independence
+data_pre <- data %>% filter(Year < 2004)
+data_post <- data %>% filter(Year >= 2004)
+Y_pre <- sum(data_pre$Y)
+N_pre <- sum(data_pre$N)
+Y_post <- sum(data_post$Y)
+N_post <- sum(data_post$N)
+contingency_table <- matrix(c(Y_pre, N_pre - Y_pre, Y_post, N_post - Y_post), nrow=2, byrow=TRUE)
+colnames(contingency_table) <- c("Susceptible", "Not Susceptible")
+rownames(contingency_table) <- c("Pre-2004", "Post-2004")
+chi_test <- chisq.test(contingency_table)
+chi_test
+```
+
+### **2. Logistic Regression Model (GLM)**
+
+Instead of a binary pre/post-2004 analysis, we also model **yearly trends** using logistic regression:
+
+$$
+\log\left(\frac{p_i}{1 - p_i}\right) = \beta_0 + \beta_1 \cdot \text{Year}_i
+$$
+
+where:
+
+-   ($\log\left(\frac{p_i}{1 - p_i}\right)$) is the **log-odds** of susceptibility in year ( i ).
+-   ( $\beta_0$ ) is the intercept (baseline susceptibility).
+-   ( $\beta_1$ ) represents the **change in susceptibility per year**.
+-   If ( $\beta_1 < 0$ ), susceptibility is decreasing over time.
+-   If ( $\beta_1 > 0$ ), susceptibility is increasing over time.
+The logistic regression results suggest that measles susceptibility in Glasgow did not change significantly over time. The Year coefficient ($\beta_1$=−0.0044
+,p= 0.122) is negative, indicating a slight downward trend in susceptibility, but this effect is not statistically significant at the 0.05 level. This means there is no strong evidence that susceptibility declined systematically between 1998 and 2012. Additionally, the null deviance (213.0) and residual deviance (210.6) suggest that the model does not explain much variation beyond a simple baseline. This supports the earlier chi-square test result, showing that the retraction of the Wakefield article in 2004 did not lead to an immediate and significant change in susceptibility rates.
