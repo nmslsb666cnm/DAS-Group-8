@@ -1,0 +1,209 @@
+---
+title: "Data analysis"
+format:
+  pdf:
+    documentclass: article
+    fontsize: 11pt
+    geometry: a4paper, margin=0.75in
+execute: 
+  eval: true
+  echo: false
+  warning: false
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(tidymodels)
+library(gt)
+library(Matrix)
+library(lme4)
+library(performance)
+library(broom)
+library(broom.mixed)
+library(pscl)
+library(knitr)
+library(kableExtra)
+```
+
+# Formal Analysis {#sec-FA}
+
+```{r}
+data <- read.csv("C:\\Users\\ASUS\\Desktop\\DAProject15.csv")
+data <- na.omit(data[,c("Year","N","Y")])
+data$Year_c <- data$Year-1998
+
+data$seg1 <- ifelse(data$Year<2004,data$Year_c,0)
+data$seg2 <- ifelse(data$Year >= 2004 & data$Year < 2010, data$Year_c - 6, 0)
+data$seg3 <- ifelse(data$Year>=2010, data$Year_c-12,0)
+
+data$ID <- rep(1:133,times=length(unique(data$Year)))
+
+data$I2004 <- as.numeric(data$Year >= 2004)
+data$I2008 <- as.numeric(data$Year >= 2008)
+```
+
+To investigate changes in measles susceptibility among preschool children in Glasgow between 1998 and 2012, we fitted a generalized linear mixed model (GLMM) with a binomial family and a logit link function. Let:
+
+-   $Y_{it}$: the number of susceptible children in intermediate zone $i$ at year $t$
+
+-   $N_{it}$: total number of children in the same group
+
+-   $p_{it}$: probability that a child in zone $i$ at time $t$ is susceptible to measles
+
+Then the model assumes: $$
+Y_{it}\sim Binomial(N_{it},p_{it})
+$$ and the logit of the probability is modeled as: $$
+logit(p_{it})=\beta_0+\beta_1\cdot seg1_{it}+\beta_2\cdot seg2_{it}+\beta_3\cdot seg3_{it}+\beta_4\cdot I2004_{it}+\beta_5\cdot I2010_{it}+b_i
+$$ where:
+
+-   $\beta_0$ is the global
+
+-   $\beta_1,\beta_2,\beta_3$ are the slopes for different time segments (gradual trends)
+
+-   $\beta_4,\beta_5$ capture abrupt level shifts in 2004 and 2008 respectively
+
+-   $b_i\sim N(0,\sigma^2)$ accounts for unobserved heterogeneity across intermediate zones.
+
+```{r}
+model_full <- glmer(
+  cbind(Y,N-Y)~seg1+seg2+seg3+I2004+I2008+(1|ID),
+  data=data,
+  family = binomial
+)
+```
+
+@tbl-model_full presents the fixed effects estimates from the generalized linear mixed model. The intercept estimate of -3.025 represents the baseline log-odds of measles susceptibility in the year 1998, prior to any segmented trends or abrupt shifts. The coefficients for the time segments indicate distinct temporal trends: during the period 1998\~2003, the log-odds of susceptibility increased significantly (seg1:$\beta=0.107$ p\<0.001) at 1% significance level, and continued to rise, from 2004\~2009 (seg2:$\beta$=0.112,p\<0.001). In contrast, the period from 2010\~2012 (seg3:$\beta$=-0.058, p\<0.05) showed a statistically significant decline in 5% significance level, suggesting an improvement in vaccination uptake.
+
+Crucially, the two indicator variables capturing potential abrupt changes in susceptibility are both statistically significant at 1% significance level. The year 2004 coinciding with the partial retraction of the Wakefield article is associated with a significant upward shift in log-odds ($\beta$=0.32,p\<0.001), suggesting a sudden increase in susceptibility that cannot be explained by trend alone. Similarly, the year 2010, following the complete discrediting of the article, is associated with a significant downward shift in susceptibility ($\beta$ = –0.260, p \< 0.001), indicating an abrupt recovery in vaccine coverage.
+
+The model's explanatory power is strong, with a Marginal $R^2$ of 0.18, indicating that the fixed effects explain 18% of the variance in susceptibility, and a Conditional $R^2$ of 0.853, suggesting that the full model (including random effects for intermediate zones) accounts for approximately 85.3% of the total variation. These results affirm the importance of both temporal dynamics and spatial heterogeneity in understanding measles susceptibility patterns in Glasgow.
+
+```{r}
+#| echo: false
+#| label: tbl-model_full
+#| tbl-cap: Summary of coefficients in model full
+#| tbl-placement: "H"
+fixed_effects <- broom.mixed::tidy(model_full, effects="fixed")
+fixed_effects <- fixed_effects[, c("term", "estimate", "std.error", "statistic", "p.value")]
+
+fixed_effects$p.value <- format.pval(fixed_effects$p.value, digits = 4, eps = 1e-6)
+
+r2_values <- performance::r2(model_full)
+r2_note <- paste0("Marginal R² = ", round(r2_values$R2_marginal, 3),
+                  "; Conditional R² = ", round(r2_values$R2_conditional, 3))
+
+kable(fixed_effects, digits = 3, caption = "Fixed Effects Summary of Full Model",
+      booktabs = TRUE, linesep = "") %>%
+  kable_styling(latex_options = c("striped", "hold_position", "threeparttable")) %>%
+  add_header_above(c(" " = 1, "Fixed Effect Estimates" = 4)) %>%
+  footnote(general = r2_note)
+```
+
+To identify the most appropriate model for explaining measles susceptibility in Glasgow, several candidate models were fitted:
+
+- Model 1: Null model (random intercept only)
+
+The logit of the probability is modeled as: 
+$$
+\text{logit}(p_{it}) = \beta_0 + b_i
+$$
+where $$ b_i \sim \mathcal{N}(0, \sigma^2) $$ is a random intercept for intermediate zone $i$.
+
+- Model 2: Segmented time trends only (no random effects)
+$$
+\text{logit}(p_{it}) = \beta_0 + \beta_1 \cdot \text{seg1}_{it} + \beta_2 \cdot \text{seg2}_{it} + \beta_3 \cdot \text{seg3}_{it}
+$$
+
+- Model 3: Segmented trends with random intercepts
+$$
+\text{logit}(p_{it}) = \beta_0 + \beta_1 \cdot \text{seg1}_{it} + \beta_2 \cdot \text{seg2}_{it} + \beta_3 \cdot \text{seg3}_{it} + b_i
+$$
+
+And we compared them using AIC, BIC, and $R^2$, as the @tbl-comparison shows, the fill model which included both segmented trends and binary indicators achieved the lowest AIC(4504.93)/BIC(4538.78) and highest marginal(0.18) and confitional(0.853) $R^2$, indicating it best captures both temporal changes and spatial variation in susceptibility. This model was therefore selected for detailed interpretation.
+
+```{r}
+Model_null <- glmer(cbind(Y,N-Y)~1+(1|ID), data = data, family = binomial)
+
+Model_trend <- glm(cbind(Y,N-Y)~seg1+seg2+seg3, data = data, family = binomial)
+
+Model_trend_ID <- glmer(cbind(Y,N-Y)~seg1+seg2+seg3+(1|ID), data = data, family = binomial)
+
+model_list <- list(Model_null=Model_null,Model_trend=Model_trend,Model_trend_ID=Model_trend_ID,model_full=model_full)
+AIC_values <- sapply(model_list, AIC)
+BIC_values <- sapply(model_list, BIC)
+get_r2 <- function(m) {
+  if ("glmerMod" %in% class(m)) {
+    r2 <- performance::r2(m)
+    return(c(r2$R2_marginal, r2$R2_conditional))
+  } else {
+    return(c(NA, NA))  
+  }
+}
+r2_matrix <- t(sapply(model_list, get_r2))
+```
+
+```{r}
+#| echo: false
+#| label: tbl-comparison
+#| tbl-cap: Model comparison table
+#| tbl-placement: "H"
+attach(data)
+#| echo: false
+tmp <- capture.output(
+  m2_r2 <- pscl::pR2(update(Model_trend, data = data))["McFadden"]
+)
+r2_matrix["Model_trend", 1] <- round(as.numeric(tmp), 3)  
+r2_matrix["Model_trend", 2] <- NA                          
+
+comparison_table <- data.frame(
+  Model=names(model_list),
+  AIC=round(AIC_values,2),
+  BIC=round(BIC_values,2),
+  Marginal_R2=round(r2_matrix[,1],3),
+  Conditonal_R2=round(r2_matrix[,2],3)
+)
+knitr::kable(comparison_table,caption = "Model Comparison using AIC, BIC, and R-square")%>%
+  kableExtra::kable_styling(latex_options = c("striped","hold_position"))
+```
+
+@fig-line compares the actual and predicted proportion of measles-susceptible preschool children in glasgow from 1998\~2012. The actual trend (solid blue line) closely follows the predictions from the full model (red dashed line), suggesting the model effectively captures key temporal patterns.
+
+Between 1998 and 2003, there is a clear upward trend in susceptibility, consistent with declining vaccination rates in the wake of the original Wakefield article (1998). In 2004, shortly after the article’s partial retraction, there is an abrupt increase in susceptibility, which is well captured by the model’s jump term I2004. This supports the hypothesis that Glasgow experienced a structural increase in susceptibility around 2004, beyond what would be expected from trend alone.
+
+After 2004, susceptibility remained high before dropping sharply around 2008. This sharp decline aligns with the full retraction of the Wakefield paper and growing public reassurance about vaccine safety. The model’s I2008 term successfully captures this drop, further confirming a dramatic improvement in susceptibility following 2008.
+
+```{r}
+#| echo: false
+#| label: fig-line
+#| fig-cap: Actual vs Predicted Measles Susceptibility Rate
+#| fig-pos: "H"
+data_summary <- data %>%
+  group_by(Year) %>%
+  summarise(actual_rate=sum(Y)/sum(N))
+data$predicted_logit <- predict(model_full, type = "link")
+data$predicted_prob <- predict(model_full, type = "response")
+
+predicted_summary <- data %>%
+  group_by(Year) %>%
+  summarise(predicted_rate = mean(predicted_prob))
+
+plot_data <- left_join(data_summary, predicted_summary, by = "Year")
+
+ggplot(plot_data, aes(x = Year)) +
+  geom_line(aes(y = actual_rate), color = "blue", size = 1.2) +
+  geom_line(aes(y = predicted_rate), color = "red", size = 1.2, linetype = "dashed") +
+  labs(title = "Actual vs Predicted Measles Susceptibility Rate",
+       y = "Proportion Susceptible",
+       caption = "Blue = Actual, Red Dashed = Predicted from model_full") +
+  theme_minimal()
+```
+
+Overall, this visual evidence strongly supports both project hypotheses:
+
+Glasgow did experience a significant change in measles susceptibility following the retraction of the Wakefield article.
+
+The change was not immediate in 2004, but rather showed both a jump in 2004 and a more substantial decline around 2008, indicating a delayed but important public health response.
+
+# Conclusion {#sec-Con}
