@@ -1,5 +1,5 @@
 ---
-title: "EDA: Measles Susceptibility in Glasgow"
+title: "Exploratory Analysis of Measles Susceptibility Trends in Glasgow (1998–2012)"
 execute:
   echo: false
   warning: false
