@@ -97,6 +97,9 @@ tab_df(tidy(chi_test), title = "Chi-square Test for Independence")
 \(b\)
 
 ```{r}
+#| echo: false
+#| message: false
+#| warning: false
 data <- read.csv("DAProject15.csv")
 data <- na.omit(data[,c("Year","N","Y")])
 data$Year_c <- data$Year-1998
@@ -138,6 +141,9 @@ $$ where:
 -   $(1|IZ)$ A random intercept term allowing each intermediate zone to have its own baseline level of susceptibility.
 
 ```{r}
+#| echo: false
+#| message: false
+#| warning: false
 model_full <- glmer(
   cbind(Y,N-Y)~seg1+seg2+seg3+I2004+I2010+(1|ID),
   data=data,
