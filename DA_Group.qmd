@@ -290,5 +290,45 @@ ggplot(plot_data, aes(x = Year)) +
        caption = "Blue = Actual, Red Dashed = Predicted from model_full") +
   theme_minimal()
 ```
+To assess the adequacy of the full generalized linear mixed model (GLMM), we examined two residual diagnostic plots.   The left @fig-residuals panel displays a QQ plot of simulated residuals.   The residuals align closely with the 45-degree reference line, indicating that their distribution is consistent with the expected uniform distribution under a correctly specified model.   This suggests that the model's distributional assumptions are appropriate, with no major deviation from uniformity.
+
+The right @fig-residuals panel shows a Pearson residuals vs fitted values plot.   The residuals are symmetrically scattered around zero without noticeable curvature or funnel shape, implying that the model does not exhibit strong heteroscedasticity or systematic bias.   While a few large residuals are observed at higher fitted values, these are limited and not indicative of serious model misfit.
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| label: fig-residuals
+#| fig-cap: Residual Diagnostic Plots for GLMM(left) and Pearson Residuals vs Fitted Values for the Full Model(right)
+library(DHARMa)
+library(gridExtra)
+sim_res <- simulateResiduals(model_full)
+resid_sim <- sim_res$scaledResiduals
+
+observed <- sort(resid_sim)
+expected <- sort(runif(length(resid_sim))) 
+qq_df <- data.frame(Expected = expected, Observed = observed)
+p1 <- ggplot(qq_df, aes(x = expected, y = observed)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, col = "red") +
+  labs(title = "QQ Plot of Simulated Residuals",
+       x = "Expected",
+       y = "Observed") +
+  theme_minimal()
+
+
+residuals_pearson <- residuals(model_full, type = "pearson")
+fitted_probs <- fitted(model_full)
+
+df_resid <- data.frame(Fitted = fitted_probs,
+                       Residuals = residuals_pearson)
+p2 <- ggplot(df_resid, aes(x = Fitted, y = Residuals)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0, color = "red") +
+  labs(title = "Residuals vs Fitted",
+       x = "Fitted Values",
+       y = "Pearson Residuals") +
+  theme_minimal()
+grid.arrange(p1, p2, ncol = 2)
+```
 
 Overall, this visual and statistical evidence strongly supports both project hypotheses. Glasgow experienced a significant change in measles susceptibility following the retraction of the Wakefield article. While the immediate effect in 2004 was an upward shift in susceptibility, a more substantial decline occurred around 2010, reflecting a delayed yet important recovery in public vaccine confidence.
