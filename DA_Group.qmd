@@ -30,7 +30,7 @@ library(kableExtra)
 # Formal Analysis {#sec-FA}
 
 ```{r}
-data <- read.csv("C:\\Users\\ASUS\\Desktop\\DAProject15.csv")
+data <- read.csv("DAProject15.csv")
 data <- na.omit(data[,c("Year","N","Y")])
 data$Year_c <- data$Year-1998
 
@@ -68,7 +68,7 @@ $$ where:
 
 ```{r}
 model_full <- glmer(
-  cbind(Y,N-Y)~seg1+seg2+seg3+I2004+I2008+(1|ID),
+  cbind(Y,N-Y)~seg1+seg2+seg3+I2004+I2010+(1|ID),
   data=data,
   family = binomial
 )
@@ -202,4 +202,3 @@ Overall, this visual evidence strongly supports both project hypotheses:
 Glasgow did experience a significant change in measles susceptibility following the retraction of the Wakefield article.
 
 The change was not immediate in 2004, but rather showed both a jump in 2004 and a more substantial decline around 20, indicating a delayed but important public health response.
-
