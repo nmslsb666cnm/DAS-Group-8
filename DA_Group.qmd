@@ -33,7 +33,7 @@ library(kableExtra)
 #| warning: false
 library(ggplot2)
 library(dplyr)
-data1 <- read.csv("C:\\Users\\ASUS\\Desktop\\DAProject15.csv")
+data1 <- read.csv("DAProject15.csv")
 year_summary <- data1 %>%
   group_by(Year) %>%
   summarise(Y = sum(Y), N = sum(N)) %>%
@@ -95,6 +95,7 @@ tab_df(tidy(chi_test), title = "Chi-square Test for Independence")
 ```
 
 \(b\)
+
 ```{r}
 data <- read.csv("DAProject15.csv")
 data <- na.omit(data[,c("Year","N","Y")])
@@ -233,6 +234,25 @@ comparison_table <- data.frame(
 )
 knitr::kable(comparison_table,caption = "Model Comparison using AIC, BIC, and R-square")%>%
   kableExtra::kable_styling(latex_options = c("striped","hold_position"))
+```
+
+@fig-residuals shows that residuals are approximately centered around zero without clear structure, indicating no systematic model misspecification in full model. A few large residuals at higher fitted values are observed but not concerning.
+```{r}
+#| echo: false
+#| label: fig-residuals
+#| fig-cap: Residuals vs Fitted Values for the Full Model
+#| fig-pos: "H"
+#| fig-height: 2
+# Pearson residuals
+residuals_pearson <- residuals(model_full, type = "pearson")
+# Fitted probabilities
+fitted_probs <- fitted(model_full)
+# Plot residuals vs fitted
+plot(fitted_probs, residuals_pearson,
+     xlab = "Fitted Values", ylab = "Pearson Residuals",
+     main = "Residuals vs Fitted")
+abline(h = 0, col = "red")
+
 ```
 
 @fig-line compares the actual and predicted proportions of measles-susceptible children in Glasgow from 1998–2012. The actual trend (blue) closely follows the full model’s predictions (red dashed), indicating a good fit.
