@@ -32,7 +32,7 @@ library(readr)
 
 # Introduction {#sec-int}
 
-In 1998, a study by Wakefield et al. controversially linked the MMR vaccine to autism, triggering widespread media coverage and a drop in vaccination uptake across the UK—falling to around 80% in some areas by 2003. Although the article was partially retracted in 2004 and fully discredited by 2010, the resulting vaccine hesitancy contributed to later measles outbreaks, including one in 2013. 
+In 1998, a study by Wakefield et al. controversially linked the MMR vaccine to autism, triggering widespread media coverage and a drop in vaccination uptake across the UK—falling to around 80% in some areas by 2003. Although the article was partially retracted in 2004 and fully discredited by 2010, the resulting vaccine hesitancy contributed to later measles outbreaks, including one in 2013.
 
 This report investigates measles susceptibility among young children in Glasgow from 1998 to 2012 to determine if Glasgow exhibited a change in measles susceptibility following the Wakefield article’s retraction. In particular, we examine whether any change occurred around 2004, when the article’s claims were repudiated. We use data from DAProject15.csv, which contains yearly counts of measles-susceptible children in Glasgow’s Intermediate Zones (IZs).\
 
@@ -75,9 +75,10 @@ kable(mean_susceptibility,
 ## Data visualisation
 
 ```{r}
-#| fig-height: 3.5
+#| fig-height: 2.5
 #| fig-width: 5
 #| fig-cap: "Boxplot of Measles Susceptibility Rates by Year in Glasgow (1998–2012)"
+#| label: fig-box
 
 
 ggplot(measles_data, aes(x = factor(Year), y = susceptibility_rate)) +
@@ -91,9 +92,10 @@ ggplot(measles_data, aes(x = factor(Year), y = susceptibility_rate)) +
 ```
 
 ```{r}
-#| fig-height: 3.5
+#| fig-height: 2.5
 #| fig-width: 5
 #| fig-cap: "Mean Measles Susceptibility Before vs After 2004"
+#| label: fig-mean
 measles_data |>
   group_by(period) |>
   summarise(mean_susceptibility = mean(susceptibility_rate, na.rm = TRUE)) |>
