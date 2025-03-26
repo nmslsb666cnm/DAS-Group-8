@@ -7,7 +7,7 @@ eda_analysis.pdf
 eda_analysis_files/libs/bootstrap/bootstrap-icons.css
 eda_analysis.pdf
 eda_analysis.html
-*.pdf
+
 eda_analysis_files/figure-html/unnamed-chunk-8-1.png
 *.css
 eda_analysis_files/libs/quarto-html/anchor.min.js
