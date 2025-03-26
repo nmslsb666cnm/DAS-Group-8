@@ -43,7 +43,7 @@ This report investigates measles susceptibility among young children in Glasgow 
 
 By analyzing the proportion of susceptible children (Y/N) over time, we aim to assess trends before and after 2004. The analysis includes an exploratory visualization of susceptibility rates over 1998–2012 and formal statistical tests (e.g. chi-square tests) comparing the pre-2004 and post-2004 periods. The results will shed light on whether the public’s response in Glasgow changed following the discrediting of the Wakefield study.
 
-\vspace{0.8cm}
+\vspace{1cm}
 
 # Exploratory Data Analysis {#sec-EA}
 
@@ -57,9 +57,9 @@ measles_data <- measles_data %>%
          period = ifelse(Year >= 2004, "After 2004", "Before 2004"))
 ```
 
-## Summary statistic
 
 ```{r}
+#| label: tbl-means
 mean_susceptibility <- measles_data %>%
   group_by(Year) %>%
   summarise(mean_susceptibility = mean(susceptibility_rate, na.rm = TRUE))
@@ -70,11 +70,12 @@ kable(mean_susceptibility,
       align = "c")
 ```
 
-*Table 1 shows the mean measles susceptibility by year. No sharp decline is observed post-2004, indicating that vaccine hesitancy may have persisted after the Wakefield article's retraction. Any recovery in vaccination rates appears gradual.*
+@tbl-means *shows the mean measles susceptibility by year. No sharp decline is observed post-2004, indicating that vaccine hesitancy may have persisted after the Wakefield article's retraction. Any recovery in vaccination rates appears gradual.*
 
 ## Data visualisation
 
 ```{r}
+#| label: fig-box_1
 #| fig-height: 3.5
 #| fig-width: 5
 #| fig-cap: "Boxplot of Measles Susceptibility Rates by Year in Glasgow (1998–2012)"
@@ -91,6 +92,7 @@ ggplot(measles_data, aes(x = factor(Year), y = susceptibility_rate)) +
 ```
 
 ```{r}
+#| label: fig-bar_1
 #| fig-height: 3.5
 #| fig-width: 5
 #| fig-cap: "Mean Measles Susceptibility Before vs After 2004"
@@ -105,7 +107,7 @@ measles_data |>
   theme_minimal()
 ```
 
-Figures 1 and 2 together show measles susceptibility trends across years and between periods. Figure 1 highlights yearly distributions, with the 2004 retraction marked, showing a peak in 2008 but no sharp drop post-2004. Figure 2 compares average susceptibility before and after 2004, revealing only a slight decrease. These patterns align with Table 1, suggesting vaccine hesitancy persisted beyond the article’s retraction.
+@fig-box_1 and @fig-bar_1 together show measles susceptibility trends across years and between periods. @fig-box_1 highlights yearly distributions, with the 2004 retraction marked, showing a peak in 2008 but no sharp drop post-2004. @fig-bar_1 compares average susceptibility before and after 2004, revealing only a slight decrease. These patterns align with Table 1, suggesting vaccine hesitancy persisted beyond the article’s retraction.
 
 ```{r}
 #| echo: false
