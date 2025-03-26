@@ -1,10 +1,11 @@
 ---
-title: "Data analysis"
+title: "Analysis of Measles Susceptibility in Glasgow 1998-2012"
 format:
   pdf:
     documentclass: article
     fontsize: 11pt
     geometry: a4paper, margin=0.75in
+author: "Group 8"
 execute: 
   eval: true
   echo: false
@@ -25,7 +26,86 @@ library(broom.mixed)
 library(pscl)
 library(knitr)
 library(kableExtra)
+library(dplyr)
+library(readr)
 ```
+
+# Introduction {#sec-int}
+
+In 1998, a study by Wakefield et al. controversially linked the MMR vaccine to autism, triggering widespread media coverage and a drop in vaccination uptake across the UK—falling to around 80% in some areas by 2003. Although the article was partially retracted in 2004 and fully discredited by 2010, the resulting vaccine hesitancy contributed to later measles outbreaks, including one in 2013. 
+
+This report investigates measles susceptibility among young children in Glasgow from 1998 to 2012 to determine if Glasgow exhibited a change in measles susceptibility following the Wakefield article’s retraction. In particular, we examine whether any change occurred around 2004, when the article’s claims were repudiated. We use data from DAProject15.csv, which contains yearly counts of measles-susceptible children in Glasgow’s Intermediate Zones (IZs).\
+
+**Key variables are:**\
+**Y** – number of pre-school children (per IZ) susceptible to measles.\
+**N** – total number of pre-school children in that IZ.\
+**Year** – the year of observation .\
+
+By analyzing the proportion of susceptible children (Y/N) over time, we aim to assess trends before and after 2004. The analysis includes an exploratory visualization of susceptibility rates over 1998–2012 and formal statistical tests (e.g. chi-square tests) comparing the pre-2004 and post-2004 periods. The results will shed light on whether the public’s response in Glasgow changed following the discrediting of the Wakefield study.
+
+\vspace{0.8cm}
+
+# Exploratory Data Analysis {#sec-EA}
+
+Exploratory Data Analysis (EDA) was conducted to understand trends in measles susceptibility among pre-school children in Glasgow from 1998 to 2012. This includes examining year-to-year patterns, comparing susceptibility before and after 2004, and visualizing distributions to support further statistical analysis.
+
+```{r}
+ measles_data <- read.csv("DAProject15.csv") 
+
+measles_data <- measles_data %>%
+  mutate(susceptibility_rate = Y / N,
+         period = ifelse(Year >= 2004, "After 2004", "Before 2004"))
+```
+
+## Summary statistic
+
+```{r}
+mean_susceptibility <- measles_data %>%
+  group_by(Year) %>%
+  summarise(mean_susceptibility = mean(susceptibility_rate, na.rm = TRUE))
+
+kable(mean_susceptibility,
+      caption = "Mean Measles Susceptibility by Year",
+      digits = 4,
+      align = "c")
+```
+
+*Table 1 shows the mean measles susceptibility by year. No sharp decline is observed post-2004, indicating that vaccine hesitancy may have persisted after the Wakefield article's retraction. Any recovery in vaccination rates appears gradual.*
+
+## Data visualisation
+
+```{r}
+#| fig-height: 3.5
+#| fig-width: 5
+#| fig-cap: "Boxplot of Measles Susceptibility Rates by Year in Glasgow (1998–2012)"
+
+
+ggplot(measles_data, aes(x = factor(Year), y = susceptibility_rate)) +
+  geom_boxplot(fill = "skyblue") +
+  geom_vline(xintercept = which(levels(factor(measles_data$Year)) == "2004"), 
+             linetype = "dashed", color = "red") +
+  labs(title = "Distribution of Susceptibility Rates by Year",
+       x = "Year", y = "Susceptibility Rate") +
+  theme_minimal()
+
+```
+
+```{r}
+#| fig-height: 3.5
+#| fig-width: 5
+#| fig-cap: "Mean Measles Susceptibility Before vs After 2004"
+measles_data |>
+  group_by(period) |>
+  summarise(mean_susceptibility = mean(susceptibility_rate, na.rm = TRUE)) |>
+  ggplot(aes(x = period, y = mean_susceptibility, fill = period)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Before 2004" = "steelblue", "After 2004" = "tomato")) +
+  labs(title = "Mean Susceptibility: Before vs After 2004",
+       x = "Period", y = "Mean Susceptibility Rate") +
+  theme_minimal()
+```
+
+Figures 1 and 2 together show measles susceptibility trends across years and between periods. Figure 1 highlights yearly distributions, with the 2004 retraction marked, showing a peak in 2008 but no sharp drop post-2004. Figure 2 compares average susceptibility before and after 2004, revealing only a slight decrease. These patterns align with Table 1, suggesting vaccine hesitancy persisted beyond the article’s retraction.
 
 ```{r}
 #| echo: false
@@ -40,6 +120,8 @@ year_summary <- data1 %>%
   mutate(Proportion = Y / N)
 
 ```
+
+\vspace{1cm}
 
 # Formal Analysis {#sec-FA}
 
@@ -272,9 +354,11 @@ ggplot(plot_data, aes(x = Year)) +
        caption = "Blue = Actual, Red Dashed = Predicted from model_full") +
   theme_minimal()
 ```
-To assess the adequacy of the full generalized linear mixed model (GLMM), we examined two residual diagnostic plots.   The left @fig-residuals panel displays a QQ plot of simulated residuals.   The residuals align closely with the 45-degree reference line, indicating that their distribution is consistent with the expected uniform distribution under a correctly specified model.   This suggests that the model's distributional assumptions are appropriate, with no major deviation from uniformity.
 
-The right @fig-residuals panel shows a Pearson residuals vs fitted values plot.   The residuals are symmetrically scattered around zero without noticeable curvature or funnel shape, implying that the model does not exhibit strong heteroscedasticity or systematic bias.   While a few large residuals are observed at higher fitted values, these are limited and not indicative of serious model misfit.
+To assess the adequacy of the full generalized linear mixed model (GLMM), we examined two residual diagnostic plots. The left @fig-residuals panel displays a QQ plot of simulated residuals. The residuals align closely with the 45-degree reference line, indicating that their distribution is consistent with the expected uniform distribution under a correctly specified model. This suggests that the model's distributional assumptions are appropriate, with no major deviation from uniformity.
+
+The right @fig-residuals panel shows a Pearson residuals vs fitted values plot. The residuals are symmetrically scattered around zero without noticeable curvature or funnel shape, implying that the model does not exhibit strong heteroscedasticity or systematic bias. While a few large residuals are observed at higher fitted values, these are limited and not indicative of serious model misfit.
+
 ```{r}
 #| echo: false
 #| message: false
@@ -316,3 +400,15 @@ grid.arrange(p1, p2, ncol = 2)
 ```
 
 Overall, this visual and statistical evidence strongly supports both project hypotheses. Glasgow experienced a significant change in measles susceptibility following the retraction of the Wakefield article. While the immediate effect in 2004 was an upward shift in susceptibility, a more substantial decline occurred around 2010, reflecting a delayed yet important recovery in public vaccine confidence.
+
+\vspace{1cm}
+
+# Conclusion {#sec-conc}
+
+Through this report, we have been analysing whether measles susceptibility changed in Glasgow following the partial retraction of the Wakefield article, and whether this change occurred in 2004; the year the article was retracted.
+
+We used a simple Chi-square test for equality of proportions, which didn’t lead us to finding any statistically significant difference pre/post 2004. Therefore, we fitted a more specific model; the GLMM with binomial family.
+
+This model lead us to our findings: there was a significant *increase* in measles susceptibility from 2004-2010, indicating an initial lack of recovery from the damage due to the Wakefield article, and a prolonged hesitancy towards vaccinations following its partial retraction. However, from 2010 onwards, we found a significant decrease in susceptibility, indicating a strong and important, though late, response. This also aligns with the full discreditation of the article.
+
+This implies the Wakefield article left a lingering effect on the societies of Glasgow; though the fear it instilled eventually dispersed as time went on.
