@@ -1,0 +1,414 @@
+---
+title: "Analysis of Measles Susceptibility in Glasgow 1998-2012"
+format:
+  pdf:
+    documentclass: article
+    fontsize: 11pt
+    geometry: a4paper, margin=0.75in
+author: "Group 8"
+execute: 
+  eval: true
+  echo: false
+  warning: false
+editor: visual
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(tidymodels)
+library(gt)
+library(Matrix)
+library(lme4)
+library(performance)
+library(broom)
+library(broom.mixed)
+library(pscl)
+library(knitr)
+library(kableExtra)
+library(dplyr)
+library(readr)
+```
+
+# Introduction {#sec-int}
+
+In 1998, a study by Wakefield et al. controversially linked the MMR vaccine to autism, triggering widespread media coverage and a drop in vaccination uptake across the UK—falling to around 80% in some areas by 2003. Although the article was partially retracted in 2004 and fully discredited by 2010, the resulting vaccine hesitancy contributed to later measles outbreaks, including one in 2013. 
+
+This report investigates measles susceptibility among young children in Glasgow from 1998 to 2012 to determine if Glasgow exhibited a change in measles susceptibility following the Wakefield article’s retraction. In particular, we examine whether any change occurred around 2004, when the article’s claims were repudiated. We use data from DAProject15.csv, which contains yearly counts of measles-susceptible children in Glasgow’s Intermediate Zones (IZs).\
+
+**Key variables are:**\
+**Y** – number of pre-school children (per IZ) susceptible to measles.\
+**N** – total number of pre-school children in that IZ.\
+**Year** – the year of observation .\
+
+By analyzing the proportion of susceptible children (Y/N) over time, we aim to assess trends before and after 2004. The analysis includes an exploratory visualization of susceptibility rates over 1998–2012 and formal statistical tests (e.g. chi-square tests) comparing the pre-2004 and post-2004 periods. The results will shed light on whether the public’s response in Glasgow changed following the discrediting of the Wakefield study.
+
+\vspace{0.8cm}
+
+# Exploratory Data Analysis {#sec-EA}
+
+Exploratory Data Analysis (EDA) was conducted to understand trends in measles susceptibility among pre-school children in Glasgow from 1998 to 2012. This includes examining year-to-year patterns, comparing susceptibility before and after 2004, and visualizing distributions to support further statistical analysis.
+
+```{r}
+ measles_data <- read.csv("DAProject15.csv") 
+
+measles_data <- measles_data %>%
+  mutate(susceptibility_rate = Y / N,
+         period = ifelse(Year >= 2004, "After 2004", "Before 2004"))
+```
+
+## Summary statistic
+
+```{r}
+mean_susceptibility <- measles_data %>%
+  group_by(Year) %>%
+  summarise(mean_susceptibility = mean(susceptibility_rate, na.rm = TRUE))
+
+kable(mean_susceptibility,
+      caption = "Mean Measles Susceptibility by Year",
+      digits = 4,
+      align = "c")
+```
+
+*Table 1 shows the mean measles susceptibility by year. No sharp decline is observed post-2004, indicating that vaccine hesitancy may have persisted after the Wakefield article's retraction. Any recovery in vaccination rates appears gradual.*
+
+## Data visualisation
+
+```{r}
+#| fig-height: 3.5
+#| fig-width: 5
+#| fig-cap: "Boxplot of Measles Susceptibility Rates by Year in Glasgow (1998–2012)"
+
+
+ggplot(measles_data, aes(x = factor(Year), y = susceptibility_rate)) +
+  geom_boxplot(fill = "skyblue") +
+  geom_vline(xintercept = which(levels(factor(measles_data$Year)) == "2004"), 
+             linetype = "dashed", color = "red") +
+  labs(title = "Distribution of Susceptibility Rates by Year",
+       x = "Year", y = "Susceptibility Rate") +
+  theme_minimal()
+
+```
+
+```{r}
+#| fig-height: 3.5
+#| fig-width: 5
+#| fig-cap: "Mean Measles Susceptibility Before vs After 2004"
+measles_data |>
+  group_by(period) |>
+  summarise(mean_susceptibility = mean(susceptibility_rate, na.rm = TRUE)) |>
+  ggplot(aes(x = period, y = mean_susceptibility, fill = period)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Before 2004" = "steelblue", "After 2004" = "tomato")) +
+  labs(title = "Mean Susceptibility: Before vs After 2004",
+       x = "Period", y = "Mean Susceptibility Rate") +
+  theme_minimal()
+```
+
+Figures 1 and 2 together show measles susceptibility trends across years and between periods. Figure 1 highlights yearly distributions, with the 2004 retraction marked, showing a peak in 2008 but no sharp drop post-2004. Figure 2 compares average susceptibility before and after 2004, revealing only a slight decrease. These patterns align with Table 1, suggesting vaccine hesitancy persisted beyond the article’s retraction.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+library(ggplot2)
+library(dplyr)
+data1 <- read.csv("DAProject15.csv")
+year_summary <- data1 %>%
+  group_by(Year) %>%
+  summarise(Y = sum(Y), N = sum(N)) %>%
+  mutate(Proportion = Y / N)
+
+```
+
+\vspace{1cm}
+
+# Formal Analysis {#sec-FA}
+
+\(a\) We define **measles susceptibility** in each Intermediate Zone (IZ) and year as the proportion:
+
+$$
+p_i = \frac{Y_i}{N_i}
+$$ where:
+
+-   ( $Y_i$ ) is the number of susceptible pre-school children in the ( i )-th IZ.
+-   ( $N_i$ ) is the total number of pre-school children in the same IZ.
+-   ( $p_i$ ) represents the proportion of susceptible children.
+
+We aim to test whether the **proportion of susceptible children changed significantly after 2004**. We formulate two statistical models:
+
+#### **1. Comparison of Two Proportions (Chi-square Test)**
+
+To compare **pre-2004 vs. post-2004**, we define the null and alternative hypotheses:
+
+$$
+H_0: p_{\text{pre}} = p_{\text{post}}
+$$
+
+$$
+H_A: p_{\text{pre}} \neq p_{\text{post}}
+$$
+
+where:
+
+-   ( $p_\text{pre}$ ) is the overall proportion of susceptible children in **1998, 2000, and 2002**.
+-   ( $p_\text{post}$ ) is the overall proportion in **2004, 2008, 2010, and 2012**.
+
+We use a **chi-square test for independence** on the contingency table,the p-value 0.7434 suggests that there is no statistically significant difference in the proportion of susceptible children between pre-2004 and post-2004.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| tbl-placement: "H"
+#| tbl-cap: chi-square test for independence
+data_pre <- data1 %>% filter(Year < 2004)
+data_post <- data1 %>% filter(Year >= 2004)
+Y_pre <- sum(data_pre$Y)
+N_pre <- sum(data_pre$N)
+Y_post <- sum(data_post$Y)
+N_post <- sum(data_post$N)
+contingency_table <- matrix(c(Y_pre, N_pre - Y_pre, Y_post, N_post - Y_post), nrow=2, byrow=TRUE)
+colnames(contingency_table) <- c("Susceptible", "Not Susceptible")
+rownames(contingency_table) <- c("Pre-2004", "Post-2004")
+chi_test <- chisq.test(contingency_table)
+library(sjPlot)
+tab_df(tidy(chi_test), title = "Chi-square Test for Independence")
+```
+
+\(b\)
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+data <- read.csv("DAProject15.csv")
+data <- na.omit(data[,c("Year","N","Y")])
+data$Year_c <- data$Year-1998
+
+data$seg1 <- ifelse(data$Year<2004,data$Year_c,0)
+data$seg2 <- ifelse(data$Year >= 2004 & data$Year < 2010, data$Year_c - 6, 0)
+data$seg3 <- ifelse(data$Year>=2010, data$Year_c-12,0)
+
+data$ID <- rep(1:133,times=length(unique(data$Year)))
+
+data$I2004 <- as.numeric(data$Year >= 2004)
+data$I2010 <- as.numeric(data$Year >= 2010)
+```
+
+Following the initial chi-square test and exploratory analysis, we proceed with a more detailed statistical investigation by fitting a generalized linear mixed model (GLMM) with a binomial family and a logit link function to model changes in measles susceptibility among preschool children in Glasgow between 1998 and 2012.Let:
+
+-   $Y_{it}$: the number of susceptible children in intermediate zone $i$ at year $t$
+
+-   $N_{it}$: total number of children in the same group
+
+-   $p_{it}$: probability that a child in zone $i$ at time $t$ is susceptible to measles
+
+Then the model assumes: $$
+Y_{it}\sim Binomial(N_{it},p_{it})
+$$ and the logit of the probability is modeled as: $$
+logit(p_{it})=\beta_0+\beta_1\cdot seg1_{it}+\beta_2\cdot seg2_{it}+\beta_3\cdot seg3_{it}+\beta_4\cdot I2004_{it}+\beta_5\cdot I2010_{it}+(1|IZ)
+$$ where:
+
+-   $\beta_0$ is the global intercept, representing the baseline log-odds of susceptibility in the reference group .
+
+-   $\beta_1,\beta_2,\beta_3$ are the slopes for different time segments (gradual trends)
+
+-   $\beta_4,\beta_5$ capture abrupt level shifts in 2004 and 2010 respectively
+
+-   $seg1,seg2,seg3$ capture linear time trends within three periods: 1998–2003, 2004–2009, and 2010–2012, allowing different slopes for each segment.
+
+-   $I2004,I2010$ are binary indicators for years ≥ 2004 and ≥ 2010, respectively, capturing abrupt level shifts in susceptibility associated with the partial (2004) and full (2010) retraction of the Wakefield article.
+
+-   $(1|IZ)$ A random intercept term allowing each intermediate zone to have its own baseline level of susceptibility.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+model_full <- glmer(
+  cbind(Y,N-Y)~seg1+seg2+seg3+I2004+I2010+(1|ID),
+  data=data,
+  family = binomial
+)
+
+```
+
+@tbl-model_full presents the fixed effects estimates from the GLMM. The intercept of –3.025 represents the baseline log-odds of measles susceptibility in 1998. The coefficients for the segmented time trends indicate a significant increase at 1% significance level during 1998–2003 ($seg1:$β=0.107, p\<0.001) and continued growth in 2004–2009 ($seg2:$β=0.112, p\<0.001), followed by a significant decline at 5% significance level from 2010–2012 ($seg3:$β=–0.058, p\<0.05), suggesting improved vaccination uptake in later years.
+
+The jump terms are also statistically significant. An upward shift in 2004 (β=0.32, p\<0.001) aligns with the partial retraction of the Wakefield article, while a notable drop in 2010 (β=–0.260, p\<0.001) coincides with the article’s full discrediting, indicating a public recovery in vaccine confidence.
+
+Model fit is strong, with Marginal$R²$=0.18 and Conditional$R²$=0.853, demonstrating that both fixed effects and random effects substantially explain the variation in susceptibility across time and space.
+
+```{r}
+#| echo: false
+#| label: tbl-model_full
+#| tbl-cap: Summary of coefficients in model full
+#| tbl-placement: "H"
+fixed_effects <- broom.mixed::tidy(model_full, effects="fixed")
+fixed_effects <- fixed_effects[, c("term", "estimate", "std.error", "statistic", "p.value")]
+
+fixed_effects$p.value <- format.pval(fixed_effects$p.value, digits = 4, eps = 1e-6)
+
+r2_values <- performance::r2(model_full)
+r2_note <- paste0("Marginal R² = ", round(r2_values$R2_marginal, 3),
+                  "; Conditional R² = ", round(r2_values$R2_conditional, 3))
+
+kable(fixed_effects, digits = 3, caption = "Fixed Effects Summary of Full Model",
+      booktabs = TRUE, linesep = "") %>%
+  kable_styling(latex_options = c("striped", "hold_position", "threeparttable")) %>%
+  add_header_above(c(" " = 1, "Fixed Effect Estimates" = 4)) %>%
+  footnote(general = r2_note)
+```
+
+To identify the most appropriate model for explaining measles susceptibility in Glasgow, several candidate models were fitted:
+
+-   Model 1: Null model (random intercept only)
+
+The logit of the probability is modeled as: $$
+\text{logit}(p_{it}) = \beta_0 + b_i
+$$ where $$ b_i \sim \mathcal{N}(0, \sigma^2) $$ is a random intercept for intermediate zone $i$.
+
+-   Model 2: Segmented time trends only (no random effects) $$
+    \text{logit}(p_{it}) = \beta_0 + \beta_1 \cdot \text{seg1}_{it} + \beta_2 \cdot \text{seg2}_{it} + \beta_3 \cdot \text{seg3}_{it}
+    $$
+
+-   Model 3: Segmented trends with random intercepts $$
+    \text{logit}(p_{it}) = \beta_0 + \beta_1 \cdot \text{seg1}_{it} + \beta_2 \cdot \text{seg2}_{it} + \beta_3 \cdot \text{seg3}_{it} + b_i
+    $$
+
+And we compared them using AIC, BIC, and $R^2$, as the @tbl-comparison shows, the fill model which included both segmented trends and binary indicators achieved the lowest AIC(4504.93)/BIC(4538.78) and highest marginal(0.18) and confitional(0.853) $R^2$, indicating it best captures both temporal changes and spatial variation in susceptibility. This model was therefore selected for detailed interpretation.
+
+```{r}
+Model_null <- glmer(cbind(Y,N-Y)~1+(1|ID), data = data, family = binomial)
+
+Model_trend <- glm(cbind(Y,N-Y)~seg1+seg2+seg3, data = data, family = binomial)
+
+Model_trend_ID <- glmer(cbind(Y,N-Y)~seg1+seg2+seg3+(1|ID), data = data, family = binomial)
+
+model_list <- list(Model_null=Model_null,Model_trend=Model_trend,Model_trend_ID=Model_trend_ID,model_full=model_full)
+AIC_values <- sapply(model_list, AIC)
+BIC_values <- sapply(model_list, BIC)
+get_r2 <- function(m) {
+  if ("glmerMod" %in% class(m)) {
+    r2 <- performance::r2(m)
+    return(c(r2$R2_marginal, r2$R2_conditional))
+  } else {
+    return(c(NA, NA))  
+  }
+}
+r2_matrix <- t(sapply(model_list, get_r2))
+```
+
+```{r}
+#| echo: false
+#| label: tbl-comparison
+#| tbl-cap: Model comparison table
+#| tbl-placement: "H"
+attach(data)
+#| echo: false
+tmp <- capture.output(
+  m2_r2 <- pscl::pR2(update(Model_trend, data = data))["McFadden"]
+)
+r2_matrix["Model_trend", 1] <- round(as.numeric(tmp), 3)  
+r2_matrix["Model_trend", 2] <- NA                          
+
+comparison_table <- data.frame(
+  Model=names(model_list),
+  AIC=round(AIC_values,2),
+  BIC=round(BIC_values,2),
+  Marginal_R2=round(r2_matrix[,1],3),
+  Conditonal_R2=round(r2_matrix[,2],3)
+)
+knitr::kable(comparison_table,caption = "Model Comparison using AIC, BIC, and R-square")%>%
+  kableExtra::kable_styling(latex_options = c("striped","hold_position"))
+```
+
+@fig-line compares the actual and predicted proportions of measles-susceptible children in Glasgow from 1998–2012. The actual trend (blue) closely follows the full model’s predictions (red dashed), indicating a good fit.
+
+Susceptibility increased between 1998 and 2003, rose further after 2004, and declined sharply around 2010. These abrupt changes correspond to the full retractions of the Wakefield article, which are effectively captured by the model’s jump terms (I2010).
+
+```{r}
+#| echo: false
+#| label: fig-line
+#| fig-cap: Actual vs Predicted Measles Susceptibility Rate
+#| fig-pos: "H"
+#| fig-height: 2
+data_summary <- data %>%
+  group_by(Year) %>%
+  summarise(actual_rate=sum(Y)/sum(N))
+data$predicted_logit <- predict(model_full, type = "link")
+data$predicted_prob <- predict(model_full, type = "response")
+
+predicted_summary <- data %>%
+  group_by(Year) %>%
+  summarise(predicted_rate = mean(predicted_prob))
+
+plot_data <- left_join(data_summary, predicted_summary, by = "Year")
+
+ggplot(plot_data, aes(x = Year)) +
+  geom_line(aes(y = actual_rate), color = "blue", size = 1.2) +
+  geom_line(aes(y = predicted_rate), color = "red", size = 1.2, linetype = "dashed") +
+  labs(title = "Actual vs Predicted Measles Susceptibility Rate",
+       y = "Proportion Susceptible",
+       caption = "Blue = Actual, Red Dashed = Predicted from model_full") +
+  theme_minimal()
+```
+
+To assess the adequacy of the full generalized linear mixed model (GLMM), we examined two residual diagnostic plots. The left @fig-residuals panel displays a QQ plot of simulated residuals. The residuals align closely with the 45-degree reference line, indicating that their distribution is consistent with the expected uniform distribution under a correctly specified model. This suggests that the model's distributional assumptions are appropriate, with no major deviation from uniformity.
+
+The right @fig-residuals panel shows a Pearson residuals vs fitted values plot. The residuals are symmetrically scattered around zero without noticeable curvature or funnel shape, implying that the model does not exhibit strong heteroscedasticity or systematic bias. While a few large residuals are observed at higher fitted values, these are limited and not indicative of serious model misfit.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| label: fig-residuals
+#| fig-pos: "H"
+#| fig-cap: Residual Diagnostic Plots for GLMM(left) and Pearson Residuals vs Fitted Values for the Full Model(right)
+#| fig-height: 2
+library(DHARMa)
+library(gridExtra)
+sim_res <- simulateResiduals(model_full)
+resid_sim <- sim_res$scaledResiduals
+
+observed <- sort(resid_sim)
+expected <- sort(runif(length(resid_sim))) 
+qq_df <- data.frame(Expected = expected, Observed = observed)
+p1 <- ggplot(qq_df, aes(x = expected, y = observed)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, col = "red") +
+  labs(title = "QQ Plot of Simulated Residuals",
+       x = "Expected",
+       y = "Observed") +
+  theme_minimal()
+
+
+residuals_pearson <- residuals(model_full, type = "pearson")
+fitted_probs <- fitted(model_full)
+
+df_resid <- data.frame(Fitted = fitted_probs,
+                       Residuals = residuals_pearson)
+p2 <- ggplot(df_resid, aes(x = Fitted, y = Residuals)) +
+  geom_point(alpha = 0.5) +
+  geom_hline(yintercept = 0, color = "red") +
+  labs(title = "Residuals vs Fitted",
+       x = "Fitted Values",
+       y = "Pearson Residuals") +
+  theme_minimal()
+grid.arrange(p1, p2, ncol = 2)
+```
+
+Overall, this visual and statistical evidence strongly supports both project hypotheses. Glasgow experienced a significant change in measles susceptibility following the retraction of the Wakefield article. While the immediate effect in 2004 was an upward shift in susceptibility, a more substantial decline occurred around 2010, reflecting a delayed yet important recovery in public vaccine confidence.
+
+\vspace{1cm}
+
+# Conclusion {#sec-conc}
+
+Through this report, we have been analysing whether measles susceptibility changed in Glasgow following the partial retraction of the Wakefield article, and whether this change occurred in 2004; the year the article was retracted.
+
+We used a simple Chi-square test for equality of proportions, which didn’t lead us to finding any statistically significant difference pre/post 2004. Therefore, we fitted a more specific model; the GLMM with binomial family.
+
+This model lead us to our findings: there was a significant *increase* in measles susceptibility from 2004-2010, indicating an initial lack of recovery from the damage due to the Wakefield article, and a prolonged hesitancy towards vaccinations following its partial retraction. However, from 2010 onwards, we found a significant decrease in susceptibility, indicating a strong and important, though late, response. This also aligns with the full discreditation of the article.
+
+This implies the Wakefield article left a lingering effect on the societies of Glasgow; though the fear it instilled eventually dispersed as time went on.
