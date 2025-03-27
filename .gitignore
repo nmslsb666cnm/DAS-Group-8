@@ -1,11 +1,8 @@
 eda_analysis.html
-eda_analysis.html
 eda_analysis.pdf
 *.png
 *.html
-*.png
 eda_analysis_files/libs/bootstrap/bootstrap-icons.css
-eda_analysis.pdf
 eda_analysis.html
 *.pdf
 eda_analysis_files/figure-html/unnamed-chunk-8-1.png
@@ -16,9 +13,6 @@ eda_analysis_files/figure-html/unnamed-chunk-8-1.png
 *.woff
 *.css
 *.js
-*.js
-*.js
-*.js
 *.html
-*.png
-*.js
+eda_analysis.qmd
+!Group_8_Analysis.pdf
