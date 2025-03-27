@@ -2,7 +2,7 @@
 
 # Measles Susceptibility in Glasgow (1998–2012)
 
-**Group 8 — Statistics Level 3 Project**
+**Group 8 Statistics Level 3 Project**
 
 This project analyzes trends in measles susceptibility among preschool children in Glasgow over the period 1998–2012.  
 We performed exploratory and formal data analysis to assess the impact of the 2004 Wakefield article retraction.
