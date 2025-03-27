@@ -34,6 +34,8 @@ library(dplyr)
 library(readr)
 ```
 
+\vspace{0.6cm}
+
 # Introduction {#sec-int}
 
 In 1998, a study by Wakefield et al. controversially linked the MMR vaccine to autism, triggering widespread media coverage and a drop in vaccination uptake across the UK—falling to around 80% in some areas by 2003. Although the article was partially retracted in 2004 and fully discredited by 2010, the resulting vaccine hesitancy contributed to later measles outbreaks, including one in 2013.
@@ -43,9 +45,11 @@ This report investigates measles susceptibility among young children in Glasgow 
 **Key variables are:**\
 **Y** – number of pre-school children (per IZ) susceptible to measles.\
 **N** – total number of pre-school children in that IZ.\
-**Year** – the year of observation .\
+**Year** – the year of observation.\
 
 By analyzing the proportion of susceptible children (Y/N) over time, we aim to assess trends before and after 2004. The analysis includes an exploratory visualization of susceptibility rates over 1998–2012 and formal statistical tests (e.g. chi-square tests) comparing the pre-2004 and post-2004 periods. The results will shed light on whether the public’s response in Glasgow changed following the discrediting of the Wakefield study.
+
+\vspace{0.9cm}
 
 # Exploratory Data Analysis {#sec-EA}
 
@@ -75,7 +79,7 @@ kable(mean_susceptibility,
 
 @tbl-means *shows the mean measles susceptibility by year. No sharp decline is observed post-2004, indicating that vaccine hesitancy may have persisted after the Wakefield article's retraction. Any recovery in vaccination rates appears gradual.*
 
-## Data visualisation
+## Data Visualisation
 
 ```{r}
 #| label: fig-box_1
@@ -125,6 +129,8 @@ year_summary <- data1 %>%
   mutate(Proportion = Y / N)
 
 ```
+
+\vspace{1cm}
 
 # Formal Analysis {#sec-FA}
 
@@ -404,6 +410,8 @@ grid.arrange(p1, p2, ncol = 2)
 ```
 
 Overall, this visual and statistical evidence strongly supports both project hypotheses. Glasgow experienced a significant change in measles susceptibility following the retraction of the Wakefield article. While the immediate effect in 2004 was an upward shift in susceptibility, a more substantial decline occurred around 2010, reflecting a delayed yet important recovery in public vaccine confidence.
+
+\vspace{1cm}
 
 # Conclusion {#sec-conc}
 
